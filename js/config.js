@@ -1,3 +1,151 @@
+const DEFAULT_DOCKER_COMPOSE = `
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 50m
+    max-file: 3
+    
+volumes:
+  router_modules:
+  raccoon_modules:
+  
+  
+configs:
+  raccoon-router:
+    file: ./raccoon-router.config.js
+  raccoon-plugins:
+    file: ./raccoon-plugins.config.js
+  raccoon-allowed-ae:
+    file: ./allowAEs.js
+    
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: \${POSTGRES_USER:-postgres\}
+      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD:-postgres\}
+      POSTGRES_DB: \${POSTGRES_DB:-postgres\}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    logging: *logging
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.6
+    command: start
+    environment:
+      KC_HOSTNAME: \${KC_HOSTNAME:-127.0.0.1\}
+      KC_HOSTNAME_PORT: \${KC_HOSTNAME_POST:-8080\}
+      KC_HOSTNAME_STRICT_BACKCHANNEL: false
+      KC_HTTP_ENABLED: \${KC_HTTP_ENABLED:-true\}
+      KC_HOSTNAME_STRICT_HTTPS: \${KC_HOSTNAME_STRICT_HTTPS:-false\}
+      KC_HEALTH_ENABLED: \${KC_HEALTH_ENABLED:true\}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: \${KEYCLOAK_ADMIN_PASSWORD:-Keycloak@1\}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres/keycloak
+      KC_DB_USERNAME: \${POSTGRES_USER:-postgres\}
+      KC_DB_PASSWORD: \${POSTGRES_PASSWORD:-postgres\}
+    ports:
+      - 8080:8080
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./keycloak-dicom-theme.jar:/opt/keycloak/providers/keycloak-theme.jar
+      
+  nginx:
+    image: nginx:1.27.2-alpine
+    container_name: nginx
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - 8081:8081
+      - 8082:8082
+      - 8083:8083
+      - 8085:8085
+      - 11112:11112
+      - 11113:11113
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/myself:/etc/nginx/myself
+      - ./nginx/html:/usr/share/nginx/html
+      
+  fluentd-mongo:
+    image: mongo:7.0
+    container_name: fluentd-mongo
+    volumes:
+      - ./raccoon-fluentd-mongo:/data/db
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Taipei
+      MONGO_INITDB_ROOT_USERNAME: \${FLUENT_MONGODB_USER:-root\}
+      MONGO_INITDB_ROOT_PASSWORD: \${FLUENT_MONGODB_PASSWORD:-root\}
+    logging: *logging
+
+
+  raccoon-router:
+    build:
+      context: ./dicom-forwarder
+      dockerfile: Dockerfile
+    image: raccoon-router:1.0.0
+    container_name: raccoon-router
+    volumes:
+      - router_modules:/nodeapp/node_modules
+      - ./router-db.sqlite:/nodeapp/data/database.sqlite
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    configs:
+      - source: raccoon-router
+        target: /nodeapp/config/index.js
+  
+  raccoon-router-frontend:
+    env_file:
+      - ./router-ui.env
+    build:
+      context: ./dicom-forwarder-ui
+      dockerfile: Dockerfile
+    image: raccoon-router-frontend:1.0.0
+    container_name: raccoon-router-frontend
+    depends_on:
+      - raccoon-router
+    restart: unless-stopped
+    
+  raccoon-dicom:
+    #glpat-7wzNA9v9-NMf7-oiHTCQ
+    image: gitlab-registry.dicom.tw/a5566qq123/raccoon-dicom:2.3.0
+    env_file:
+      - ./raccoon.env
+    deploy:
+      mode: replicated
+      replicas: 4
+    configs:
+      - source: raccoon-plugins
+        target: /nodejs/raccoon/plugins/config.js
+      - source: raccoon-allowed-ae
+        target: /nodejs/raccoon/config/allowAEs.js
+    volumes:
+      - ./raccoon-stroage:/dicomFiles
+      - raccoon_modules:/nodejs/raccoon/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *logging
+`;
+
 document.addEventListener('alpine:init', () => {
     Alpine.data('dockerConfig', () => ({
         activeTab: 'postgres',
@@ -29,9 +177,13 @@ document.addEventListener('alpine:init', () => {
 
         async init() {
             try {
-                const response = await fetch('data/docker-compose-example.yaml');
-                const yamlText = await response.text();
-                this.originalCompose = YAML.parse(yamlText);
+                try {
+                    const response = await fetch('data/docker-compose-example.yaml');
+                    const yamlText = await response.text();
+                    this.originalCompose = YAML.parse(yamlText);
+                } catch(e) {
+                    this.originalCompose = YAML.parse(DEFAULT_DOCKER_COMPOSE);
+                }
             } catch (error) {
                 console.error('無法載入 docker-compose 範例:', error);
                 alert('載入配置文件失敗');
