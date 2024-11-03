@@ -1,5 +1,6 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('dockerConfig', () => ({
+        activeTab: 'postgres',
         availableServices: [
             { name: 'postgres' },
             { name: 'keycloak' },
@@ -13,7 +14,15 @@ document.addEventListener('alpine:init', () => {
         selectedServices: [],
         config: {
             postgresUser: 'postgres',
-            postgresPassword: 'postgres'
+            postgresPassword: 'postgres',
+            keycloak: {
+                adminPassword: 'Keycloak@1',
+                hostname: '127.0.0.1',
+                hostnamePort: '8080',
+                httpEnabled: 'true',
+                hostnameStrictHttps: 'false',
+                healthEnabled: 'true'
+            }
         },
         generatedFiles: [],
         originalCompose: null,
@@ -156,8 +165,15 @@ document.addEventListener('alpine:init', () => {
 
             // 替換環境變數
             const yamlString = YAML.stringify(newCompose);
-            return yamlString.replace(/\${POSTGRES_USER:-postgres}/g, this.config.postgresUser)
-                           .replace(/\${POSTGRES_PASSWORD:-postgres}/g, this.config.postgresPassword);
+            return yamlString
+                .replace(/\${POSTGRES_USER:-postgres}/g, this.config.postgresUser)
+                .replace(/\${POSTGRES_PASSWORD:-postgres}/g, this.config.postgresPassword)
+                .replace(/\${KEYCLOAK_ADMIN_PASSWORD:-Keycloak@1}/g, this.config.keycloak.adminPassword)
+                .replace(/\${KC_HOSTNAME:-127.0.0.1}/g, this.config.keycloak.hostname)
+                .replace(/\${KC_HOSTNAME_POST:-8080}/g, this.config.keycloak.hostnamePort)
+                .replace(/\${KC_HTTP_ENABLED:-true}/g, this.config.keycloak.httpEnabled)
+                .replace(/\${KC_HOSTNAME_STRICT_HTTPS:-false}/g, this.config.keycloak.hostnameStrictHttps)
+                .replace(/\${KC_HEALTH_ENABLED:true}/g, this.config.keycloak.healthEnabled);
         },
 
         shouldIncludeVolume(volumeName) {

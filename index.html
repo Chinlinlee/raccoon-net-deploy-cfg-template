@@ -36,14 +36,77 @@
         <!-- 基礎設定區 -->
         <div class="mb-6" x-show="selectedServices.length > 0">
             <h2 class="text-xl font-semibold mb-2">基礎設定</h2>
-            <div class="space-y-4">
+            
+            <!-- 分頁標籤 -->
+            <div class="border-b border-gray-200 mb-4">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button 
+                        @click="activeTab = 'postgres'"
+                        :class="{'border-blue-500 text-blue-600': activeTab === 'postgres',
+                                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'postgres'}"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                        x-show="selectedServices.includes('postgres')"
+                    >
+                        Postgres 設定
+                    </button>
+                    <button 
+                        @click="activeTab = 'keycloak'"
+                        :class="{'border-blue-500 text-blue-600': activeTab === 'keycloak',
+                                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'keycloak'}"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                        x-show="selectedServices.includes('keycloak')"
+                    >
+                        Keycloak 設定
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Postgres 設定 -->
+            <div x-show="activeTab === 'postgres'" class="space-y-4">
                 <div>
                     <label class="block">Postgres 使用者名稱:</label>
-                    <input type="text" x-model="config.postgresUser" class="border p-2 rounded">
+                    <input type="text" x-model="config.postgresUser" class="border p-2 rounded w-full">
                 </div>
                 <div>
                     <label class="block">Postgres 密碼:</label>
-                    <input type="text" x-model="config.postgresPassword" class="border p-2 rounded">
+                    <input type="text" x-model="config.postgresPassword" class="border p-2 rounded w-full">
+                </div>
+            </div>
+
+            <!-- Keycloak 設定 -->
+            <div x-show="activeTab === 'keycloak'" class="space-y-4">
+                <div>
+                    <label class="block">管理員密碼:</label>
+                    <input type="text" x-model="config.keycloak.adminPassword" class="border p-2 rounded w-full">
+                </div>
+                <div>
+                    <label class="block">主機名稱:</label>
+                    <input type="text" x-model="config.keycloak.hostname" class="border p-2 rounded w-full">
+                </div>
+                <div>
+                    <label class="block">主機端口:</label>
+                    <input type="text" x-model="config.keycloak.hostnamePort" class="border p-2 rounded w-full">
+                </div>
+                <div>
+                    <label class="block">啟用 HTTP:</label>
+                    <select x-model="config.keycloak.httpEnabled" class="border p-2 rounded w-full">
+                        <option value="true">是</option>
+                        <option value="false">否</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block">強制 HTTPS:</label>
+                    <select x-model="config.keycloak.hostnameStrictHttps" class="border p-2 rounded w-full">
+                        <option value="false">否</option>
+                        <option value="true">是</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block">啟用健康檢查:</label>
+                    <select x-model="config.keycloak.healthEnabled" class="border p-2 rounded w-full">
+                        <option value="true">是</option>
+                        <option value="false">否</option>
+                    </select>
                 </div>
             </div>
         </div>
