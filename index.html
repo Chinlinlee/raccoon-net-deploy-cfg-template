@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker 服務配置生成器</title>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="js/yaml.min.js"></script>
+    <script src="js/jszip.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="css/index.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div x-data="dockerConfig" x-init="initAlpine" class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Docker 服務配置生成器</h1>
+        
+        <!-- 服務選擇區 -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold mb-2">選擇服務</h2>
+            <div class="space-y-2">
+                <template x-for="service in availableServices" :key="service.name">
+                    <div class="flex items-center">
+                        <input 
+                            type="checkbox" 
+                            :id="service.name"
+                            :value="service.name"
+                            x-model="selectedServices"
+                            class="mr-2"
+                        >
+                        <label :for="service.name" x-text="service.name"></label>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- 基礎設定區 -->
+        <div class="mb-6" x-show="selectedServices.length > 0">
+            <h2 class="text-xl font-semibold mb-2">基礎設定</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block">Postgres 使用者名稱:</label>
+                    <input type="text" x-model="config.postgresUser" class="border p-2 rounded">
+                </div>
+                <div>
+                    <label class="block">Postgres 密碼:</label>
+                    <input type="text" x-model="config.postgresPassword" class="border p-2 rounded">
+                </div>
+            </div>
+        </div>
+
+        <!-- 生成按鈕 -->
+        <button 
+            @click="generateConfigs"
+            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            x-show="selectedServices.length > 0"
+        >
+            生成配置文件
+        </button>
+
+        <!-- 結果顯示區 -->
+        <div class="mt-6 flex justify-between items-center" x-show="generatedFiles.length > 0">
+            <h2 class="text-xl font-semibold">生成的文件</h2>
+            <button 
+                @click="downloadAllFiles"
+                class="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600 transition-colors"
+            >
+                下載全部文件
+            </button>
+        </div>
+        <div class="space-y-6">
+            <template x-for="file in generatedFiles" :key="file.name">
+                <div class="file-container">
+                    <div class="file-header">
+                        <h3 class="font-semibold" x-text="file.name"></h3>
+                    </div>
+                    <div class="file-content">
+                        <pre><code x-text="file.content"></code></pre>
+                    </div>
+                    <div class="file-actions">
+                        <button 
+                            @click="downloadFile(file)"
+                            class="bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600 transition-colors"
+                        >
+                            下載文件
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+</body>
+</html>
