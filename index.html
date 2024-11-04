@@ -1,157 +1,220 @@
 <!DOCTYPE html>
 <html lang="zh">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Docker 服務配置生成器</title>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="js/yaml.min.js"></script>
-    <script src="js/jszip.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="css/index.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100">
-    <div x-data="dockerConfig" x-init="initAlpine" class="container mx-auto p-4">
-        <h1 class="text-2xl font-bold mb-4">Docker 服務配置生成器</h1>
-        
-        <!-- 服務選擇區 -->
-        <div class="mb-6">
-            <h2 class="text-xl font-semibold mb-2">選擇服務</h2>
-            <div class="space-y-2">
-                <template x-for="service in availableServices" :key="service.name">
-                    <div class="flex items-center">
-                        <input 
-                            type="checkbox" 
-                            :id="service.name"
-                            :value="service.name"
-                            x-model="selectedServices"
-                            class="mr-2"
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Docker 服務配置生成器</title>
+        <script
+            defer
+            src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+        ></script>
+        <script src="js/yaml.min.js"></script>
+        <script src="js/jszip.min.js"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+            rel="stylesheet"
+        />
+        <link href="css/index.css" rel="stylesheet" />
+    </head>
+    <body class="bg-gray-100">
+        <div
+            x-data="dockerConfig"
+            x-init="initAlpine"
+            class="container mx-auto p-4"
+        >
+            <h1 class="text-2xl font-bold mb-4">Docker 服務配置生成器</h1>
+
+            <!-- 服務選擇區 -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-2">選擇服務</h2>
+                <div class="space-y-2">
+                    <template
+                        x-for="service in availableServices"
+                        :key="service.name"
+                    >
+                        <div class="flex items-center">
+                            <input
+                                type="checkbox"
+                                :id="service.name"
+                                :value="service.name"
+                                x-model="selectedServices"
+                                class="mr-2"
+                            />
+                            <label
+                                :for="service.name"
+                                x-text="service.name"
+                            ></label>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- 基礎設定區 -->
+            <div class="mb-6" x-show="selectedServices.length > 0">
+                <h2 class="text-xl font-semibold mb-2">基礎設定</h2>
+
+                <!-- 分頁標籤 -->
+                <div class="border-b border-gray-200 mb-4">
+                    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                        <button
+                            @click="activeTab = 'postgres'"
+                            :class="{'border-blue-500 text-blue-600': activeTab === 'postgres',
+                                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'postgres'}"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                            x-show="selectedServices.includes('postgres')"
                         >
-                        <label :for="service.name" x-text="service.name"></label>
+                            Postgres 設定
+                        </button>
+                        <button
+                            @click="activeTab = 'keycloak'"
+                            :class="{'border-blue-500 text-blue-600': activeTab === 'keycloak',
+                                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'keycloak'}"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                            x-show="selectedServices.includes('keycloak')"
+                        >
+                            Keycloak 設定
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Postgres 設定 -->
+                <div x-show="activeTab === 'postgres'" class="space-y-4">
+                    <div>
+                        <label class="block">Postgres 使用者名稱:</label>
+                        <input
+                            type="text"
+                            x-model="config.postgresUser"
+                            class="border p-2 rounded w-full"
+                        />
+                    </div>
+                    <div>
+                        <label class="block">Postgres 密碼:</label>
+                        <input
+                            type="text"
+                            x-model="config.postgresPassword"
+                            class="border p-2 rounded w-full"
+                        />
+                    </div>
+                </div>
+
+                <!-- Keycloak 設定 -->
+                <div x-show="activeTab === 'keycloak'" class="space-y-4">
+                    <div>
+                        <label class="block">管理員密碼:</label>
+                        <input
+                            type="text"
+                            x-model="config.keycloak.adminPassword"
+                            class="border p-2 rounded w-full"
+                        />
+                    </div>
+                    <div>
+                        <label class="block">主機名稱:</label>
+                        <input
+                            type="text"
+                            x-model="config.keycloak.hostname"
+                            class="border p-2 rounded w-full"
+                        />
+                    </div>
+                    <div>
+                        <label class="block">主機端口:</label>
+                        <input
+                            type="text"
+                            x-model="config.keycloak.hostnamePort"
+                            class="border p-2 rounded w-full"
+                        />
+                    </div>
+                    <div>
+                        <label class="block">啟用 HTTP:</label>
+                        <select
+                            x-model="config.keycloak.httpEnabled"
+                            class="border p-2 rounded w-full"
+                        >
+                            <option value="true">是</option>
+                            <option value="false">否</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block">強制 HTTPS:</label>
+                        <select
+                            x-model="config.keycloak.hostnameStrictHttps"
+                            class="border p-2 rounded w-full"
+                        >
+                            <option value="false">否</option>
+                            <option value="true">是</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block">啟用健康檢查:</label>
+                        <select
+                            x-model="config.keycloak.healthEnabled"
+                            class="border p-2 rounded w-full"
+                        >
+                            <option value="true">是</option>
+                            <option value="false">否</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 生成按鈕 -->
+            <button
+                @click="generateConfigs"
+                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                x-show="selectedServices.length > 0"
+            >
+                生成配置文件
+            </button>
+
+            <!-- 結果顯示區 -->
+            <div
+                class="mt-6 flex justify-between items-center"
+                x-show="generatedFiles.length > 0"
+            >
+                <h2 class="text-xl font-semibold">生成的文件</h2>
+                <button
+                    @click="downloadAllFiles"
+                    class="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600 transition-colors"
+                >
+                    下載全部文件
+                </button>
+            </div>
+            <div class="space-y-6">
+                <template x-for="file in generatedFiles" :key="file.name">
+                    <div class="file-container">
+                        <div class="file-header">
+                            <h3 class="font-semibold" x-text="file.name"></h3>
+                        </div>
+                        <div class="file-content">
+                            <pre><code x-text="file.content"></code></pre>
+                        </div>
+                        <div class="file-actions">
+                            <button
+                                @click="downloadFile(file)"
+                                class="bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600 transition-colors"
+                            >
+                                下載文件
+                            </button>
+                        </div>
                     </div>
                 </template>
             </div>
         </div>
 
-        <!-- 基礎設定區 -->
-        <div class="mb-6" x-show="selectedServices.length > 0">
-            <h2 class="text-xl font-semibold mb-2">基礎設定</h2>
-            
-            <!-- 分頁標籤 -->
-            <div class="border-b border-gray-200 mb-4">
-                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                    <button 
-                        @click="activeTab = 'postgres'"
-                        :class="{'border-blue-500 text-blue-600': activeTab === 'postgres',
-                                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'postgres'}"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
-                        x-show="selectedServices.includes('postgres')"
-                    >
-                        Postgres 設定
-                    </button>
-                    <button 
-                        @click="activeTab = 'keycloak'"
-                        :class="{'border-blue-500 text-blue-600': activeTab === 'keycloak',
-                                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'keycloak'}"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
-                        x-show="selectedServices.includes('keycloak')"
-                    >
-                        Keycloak 設定
-                    </button>
-                </nav>
-            </div>
-
-            <!-- Postgres 設定 -->
-            <div x-show="activeTab === 'postgres'" class="space-y-4">
-                <div>
-                    <label class="block">Postgres 使用者名稱:</label>
-                    <input type="text" x-model="config.postgresUser" class="border p-2 rounded w-full">
-                </div>
-                <div>
-                    <label class="block">Postgres 密碼:</label>
-                    <input type="text" x-model="config.postgresPassword" class="border p-2 rounded w-full">
-                </div>
-            </div>
-
-            <!-- Keycloak 設定 -->
-            <div x-show="activeTab === 'keycloak'" class="space-y-4">
-                <div>
-                    <label class="block">管理員密碼:</label>
-                    <input type="text" x-model="config.keycloak.adminPassword" class="border p-2 rounded w-full">
-                </div>
-                <div>
-                    <label class="block">主機名稱:</label>
-                    <input type="text" x-model="config.keycloak.hostname" class="border p-2 rounded w-full">
-                </div>
-                <div>
-                    <label class="block">主機端口:</label>
-                    <input type="text" x-model="config.keycloak.hostnamePort" class="border p-2 rounded w-full">
-                </div>
-                <div>
-                    <label class="block">啟用 HTTP:</label>
-                    <select x-model="config.keycloak.httpEnabled" class="border p-2 rounded w-full">
-                        <option value="true">是</option>
-                        <option value="false">否</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block">強制 HTTPS:</label>
-                    <select x-model="config.keycloak.hostnameStrictHttps" class="border p-2 rounded w-full">
-                        <option value="false">否</option>
-                        <option value="true">是</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block">啟用健康檢查:</label>
-                    <select x-model="config.keycloak.healthEnabled" class="border p-2 rounded w-full">
-                        <option value="true">是</option>
-                        <option value="false">否</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- 生成按鈕 -->
-        <button 
-            @click="generateConfigs"
-            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            x-show="selectedServices.length > 0"
-        >
-            生成配置文件
-        </button>
-
-        <!-- 結果顯示區 -->
-        <div class="mt-6 flex justify-between items-center" x-show="generatedFiles.length > 0">
-            <h2 class="text-xl font-semibold">生成的文件</h2>
-            <button 
-                @click="downloadAllFiles"
-                class="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600 transition-colors"
+        <div x-data="toastManager">
+            <div
+                x-cloak
+                x-show="show"
+                class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-500 ease-out"
+                :class="{
+                    'translate-y-0 opacity-100': show,
+                    'translate-y-2 opacity-0': !show
+                }"
+                @click="hide"
             >
-                下載全部文件
-            </button>
+                <span x-text="message"></span>
+            </div>
         </div>
-        <div class="space-y-6">
-            <template x-for="file in generatedFiles" :key="file.name">
-                <div class="file-container">
-                    <div class="file-header">
-                        <h3 class="font-semibold" x-text="file.name"></h3>
-                    </div>
-                    <div class="file-content">
-                        <pre><code x-text="file.content"></code></pre>
-                    </div>
-                    <div class="file-actions">
-                        <button 
-                            @click="downloadFile(file)"
-                            class="bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600 transition-colors"
-                        >
-                            下載文件
-                        </button>
-                    </div>
-                </div>
-            </template>
-        </div>
-    </div>
 
-    <script src="js/config.js"></script>
-</body>
+        <script src="js/config.js"></script>
+    </body>
 </html>
