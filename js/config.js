@@ -331,8 +331,6 @@ document.addEventListener('alpine:init', () => {
       this.$nextTick(() => {
         this.showToastMessage();
       });
-
-      console.log(this.selectedServices)
     },
 
     generateDockerCompose() {
@@ -711,9 +709,6 @@ location ~ /\.(?!well-known) {
     handleDependencies(selectedServices) {
       if (selectedServices.includes('raccoon-dicom')) {
         // 確保必要的依賴服務被選中
-        if (!selectedServices.includes('postgres')) {
-          selectedServices.push('postgres');
-        }
         if (!selectedServices.includes('fluentd-mongo')) {
           selectedServices.push('fluentd-mongo');
         }
@@ -722,6 +717,15 @@ location ~ /\.(?!well-known) {
       if(selectedServices.includes('raccoon-dicom-ui')) {
         if (!selectedServices.includes('nginx')) {
           selectedServices.push('nginx');
+        }
+      }
+
+      if (selectedServices.includes('keycloak') ||
+          selectedServices.includes('raccoon-dicom') ||
+          selectedServices.includes('raccoon-router')
+        ) {
+        if (!selectedServices.includes('postgres')) {
+          selectedServices.push('postgres');
         }
       }
     },
