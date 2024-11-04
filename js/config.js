@@ -190,6 +190,7 @@ document.addEventListener('alpine:init', () => {
       { name: 'raccoon-router' },
       { name: 'raccoon-router-frontend' },
       { name: 'raccoon-dicom' },
+      { name: 'raccoon-dicom-ui' },
       { name: 'BlueLight' }
     ],
     selectedServices: [],
@@ -330,6 +331,8 @@ document.addEventListener('alpine:init', () => {
       this.$nextTick(() => {
         this.showToastMessage();
       });
+
+      console.log(this.selectedServices)
     },
 
     generateDockerCompose() {
@@ -596,6 +599,37 @@ location ~ /\.(?!well-known) {
 }`
         });
       }
+
+      if (this.selectedServices.includes('raccoon-dicom-ui')) {
+        this.generatedFiles.push({
+          name: 'nginx/conf.d/raccoon-ui.conf',
+          content: `server {
+    listen      8083;
+    listen      [::]:8083;
+    server_name localhost;
+      
+    # security
+    include     myself/security.conf;
+      
+    # logging
+    access_log  /var/log/nginx/access.log combined buffer=512k flush=1m;
+    error_log   /var/log/nginx/error.log warn;
+    root /usr/share/nginx/html/raccoon-ui;
+      
+    # React application serving under /raccoon-ui
+    location / {
+        index index.html;
+        try_files $uri $uri/ /index.html =404;  # Prevent infinite redirection cycle
+    }
+      
+    location /static {
+        alias /usr/share/nginx/html/raccoon-ui/static;
+        expires max;
+        add_header Cache-Control "public";
+    }
+}`
+        });
+      }
     },
 
     generateRaccoonNginxConfig() {
@@ -682,6 +716,12 @@ location ~ /\.(?!well-known) {
         }
         if (!selectedServices.includes('fluentd-mongo')) {
           selectedServices.push('fluentd-mongo');
+        }
+      }
+
+      if(selectedServices.includes('raccoon-dicom-ui')) {
+        if (!selectedServices.includes('nginx')) {
+          selectedServices.push('nginx');
         }
       }
     },
