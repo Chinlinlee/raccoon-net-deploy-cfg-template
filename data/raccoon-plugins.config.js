@@ -52,10 +52,10 @@ module.exports.pluginsConfig = {
             }
         ],
         server: {
-            url: "http://162.38.2.1:8080",
-            realm: "dog",
-            clientId: "account",
-            clientSecret: "mqPS2Y374uUXoFoOAucdNwIqL6MN0m8m"
+            url: "http://127.0.0.1:8080",
+            realm: "realm",
+            clientId: "id",
+            clientSecret: "secret"
         },
         adminRouters: [
             {
