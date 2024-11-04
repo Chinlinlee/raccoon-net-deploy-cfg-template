@@ -257,8 +257,8 @@ document.addEventListener('alpine:init', () => {
 
       if (this.selectedServices.includes('BlueLight')) {
         const raccoonConf = `server {
-    listen      80;
-    listen      [::]:80;
+    listen      8081;
+    listen      [::]:8081;
     server_name _;
 
     # security
