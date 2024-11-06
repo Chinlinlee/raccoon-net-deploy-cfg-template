@@ -47,7 +47,7 @@ services:
       KC_HOSTNAME_STRICT_BACKCHANNEL: false
       KC_HTTP_ENABLED: \${KC_HTTP_ENABLED:-true\}
       KC_HOSTNAME_STRICT_HTTPS: \${KC_HOSTNAME_STRICT_HTTPS:-false\}
-      KC_HEALTH_ENABLED: \${KC_HEALTH_ENABLED:true\}
+      KC_HEALTH_ENABLED: \${KC_HEALTH_ENABLED:-true\}
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: \${KEYCLOAK_ADMIN_PASSWORD:-Keycloak@1\}
       KC_DB: postgres
@@ -373,7 +373,7 @@ document.addEventListener('alpine:init', () => {
         .replace(/\${KC_HOSTNAME_POST:-8080}/g, this.config.keycloak.hostnamePort)
         .replace(/\${KC_HTTP_ENABLED:-true}/g, this.config.keycloak.httpEnabled)
         .replace(/\${KC_HOSTNAME_STRICT_HTTPS:-false}/g, this.config.keycloak.hostnameStrictHttps)
-        .replace(/\${KC_HEALTH_ENABLED:true}/g, this.config.keycloak.healthEnabled);
+        .replace(/\${KC_HEALTH_ENABLED:-true}/g, this.config.keycloak.healthEnabled);
     },
 
     shouldIncludeVolume(volumeName) {
