@@ -330,6 +330,16 @@ document.addEventListener('alpine:init', () => {
           name: 'raccoon.env',
           content: envContent
         });
+        const pluginsConfigContent = this.generateRaccoonPluginsConfig();
+        this.generatedFiles.push({
+          name: 'raccoon-plugins.config.js',
+          content: pluginsConfigContent
+        });
+        const allowAeContent = this.generateRaccoonAllowAeConfig();
+        this.generatedFiles.push({
+          name: 'allowAEs.js',
+          content: allowAeContent
+        });
 
         if (!this.generatedFiles.find(file => file.name === 'nginx/conf.d/raccoon.conf')) {
           this.generateRaccoonNginxConfig();
@@ -465,6 +475,177 @@ DIMSE_KEY_PASS="secret"
 DIMSE_TRUST_STORE="./config/certs/cacerts.p12"
 DIMSE_TRUST_STORE_TYPE="PKCS12"
 DIMSE_TRUST_STORE_PASS="secret"`;
+    },
+
+    generateRaccoonPluginsConfig() {
+      return `
+module.exports.pluginsConfig = {
+    "helloWorld": {
+        enable: false,
+        before: true,
+        routers: [
+            {
+                path: "/dicom-web/studies",
+                method: "get"
+            },
+            {
+                path: "/dicom-web/studies/:studyUID/instances",
+                method: "get"
+            }
+        ]
+    },
+    "syncToFhirServer": {
+        enable: false,
+        before: false,
+        routers: [
+            {
+                path: "/dicom-web/studies",
+                method: "post"
+            }
+        ],
+        fhir: {
+            server: {
+                baseUrl: "http://127.0.0.1/fhir"
+            }
+        }
+    },
+    "dicomdir": {
+        enable: false,
+        before: true,
+        routers: [
+            {
+                path: "/dicom-web/dicomdir",
+                method: "get"
+            }
+        ]
+    },
+    "oauth": {
+        enable: false,
+        before: true,
+        routers: [
+            {
+                path: "*",
+                method: "get"
+            }
+        ],
+        server: {
+            url: "http://127.0.0.1:8080",
+            realm: "realm",
+            clientId: "clientId",
+            clientSecret: "clientSecret"
+        },
+        acl: {
+            // In best practice, you should setting the acl
+            enable: false,
+            roles: [
+                {
+                    name: "admin",
+                    routers: [
+                        { path: "/admin/*", method: "GET" },
+                        { path: "/api/*", method: "*" }
+                    ]
+                },
+                {
+                    name: "user",
+                    routers: [
+                        { path: "/api/public/*", method: "GET" }
+                    ]
+                }
+            ]
+        }
+    },
+    "statistic-mongodb": {
+        enable: false,
+        before: true,
+        // we don't need to add any routers here
+        // just remain empty
+        routers: [],
+        mongodb: {
+            hosts: ["127.0.0.1"],
+            ports: [27017],
+            dbName: "raccoon-logs",
+            urlOptions: "",
+            user: "root",
+            password: "root",
+            authSource: "admin"
+        }
+    },
+    "hl7-server": {
+        enable: false,
+        before: true,
+        routers: [],
+        port: 7777
+    }
+};
+`;
+    },
+    generateRaccoonAllowAeConfig() {
+      return `
+module.exports.allowAEs = {
+    // Allowed ae list to call Raccoon
+    sources: {
+        find: [
+            {
+                aeTitle: "ANYSCU",
+                host: "localhost",
+                port: 1234
+            }
+        ],
+        move: [
+            {
+                aeTitle: "ANYSCU",
+                host: "localhost",
+                port: 1234
+            }
+        ],
+        store: [
+            {
+                aeTitle: "ANYSCU",
+                host: "localhost",
+                port: 1234
+            }
+        ]
+    },
+    // Allowed ae list from Raccoon.
+    remotes: [
+        {
+            aeTitle: "STORESCP",
+            host: "localhost",
+            port: 11113
+        },
+        {
+            aeTitle: "STORESCP_TLS",
+            host: "localhost",
+            port: 2762,
+            cipherSuites: [
+                "SSL_RSA_WITH_NULL_SHA",
+                "TLS_RSA_WITH_AES_128_CBC_SHA",
+                "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+            ]
+        },
+        {
+            aeTitle: "STGCMTSCU",
+            host: "localhost",
+            port: 11115
+        },
+        {
+            aeTitle: "STGCMTSCU_TLS",
+            host: "localhost",
+            port: 12762,
+            cipherSuites: [
+                "SSL_RSA_WITH_NULL_SHA",
+                "TLS_RSA_WITH_AES_128_CBC_SHA",
+                "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+            ]
+        },
+        {
+            aeTitle: "MOVESCU",
+            host: "localhost",
+            port: 1234
+        }
+    ]
+};
+      `;
     },
 
     generateNginxConfigs() {
