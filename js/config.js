@@ -144,6 +144,14 @@ services:
         condition: service_healthy
     restart: unless-stopped
     logging: *logging
+
+  raccoon-dicom-ui:
+    build:
+      context: ./dicom-forwarder-ui
+      dockerfile: Dockerfile
+    image: raccoon-dicom-ui:1.0.0
+    container_name: raccoon-dicom-ui
+    restart: unless-stopped
 `;
 
 document.addEventListener('alpine:init', () => {
@@ -326,6 +334,14 @@ document.addEventListener('alpine:init', () => {
         if (!this.generatedFiles.find(file => file.name === 'nginx/conf.d/raccoon.conf')) {
           this.generateRaccoonNginxConfig();
         }
+      }
+
+      if (this.selectedServices.includes('raccoon-dicom-ui')) {
+        let raccoonUiEnv = this.generateRaccoonUiEnvConfig();
+        this.generatedFiles.push({
+          name: 'router-ui.env.js',
+          content: raccoonUiEnv
+        });
       }
 
       this.$nextTick(() => {
@@ -656,6 +672,19 @@ location ~ /\.(?!well-known) {
 }`
         });
       }
+    },
+    generateRaccoonUiEnvConfig() {
+      return `
+window._env_ = {
+    REACT_APP_PACS_PATH: " <PACS_URL> ",
+    REACT_APP_VIEWER_PATH: " <VIEWER_URL> ",
+    REACT_APP_USE_KEYCLOAK: "true",
+    REACT_APP_KEYCLOAK_PATH: " <KEYCLOAK_URL> ",
+    REACT_APP_KEYCLOAK_REALM: " <REALM_NAME> ",
+    REACT_APP_KEYCLOAK_CLIENT_ID: " <CLIENT_ID> ",
+    REACT_APP_KEYCLOAK_CLIENT_SECRET: " <CLIENT_SECRET> ",
+}
+`;
     },
 
     downloadFile(file) {
