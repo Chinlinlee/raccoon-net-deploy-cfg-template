@@ -184,7 +184,13 @@
                         <div class="file-header">
                             <h3 class="font-semibold" x-text="file.name"></h3>
                         </div>
-                        <div class="file-content">
+                        <div class="file-content relative">
+                            <button 
+                                @click="copyToClipboard($event.target.parentElement.querySelector('code').textContent)"
+                                class="absolute top-2 right-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded text-sm"
+                            >
+                                複製
+                            </button>
                             <pre><code x-text="file.content"></code></pre>
                         </div>
                         <div class="file-actions">

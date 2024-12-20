@@ -232,11 +232,11 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    showToastMessage() {
+    showToastMessage(message) {
       // 使用自定義事件來觸發 toast
       window.dispatchEvent(new CustomEvent('show-toast', {
         detail: {
-          message: '配置文件生成成功!',
+          message,
           duration: 3000
         }
       }));
@@ -355,7 +355,7 @@ document.addEventListener('alpine:init', () => {
       }
 
       this.$nextTick(() => {
-        this.showToastMessage();
+        this.showToastMessage('配置文件生成成功!');
       });
     },
 
@@ -938,6 +938,14 @@ window._env_ = {
           selectedServices.push('postgres');
         }
       }
+    },
+    copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            this.showToastMessage('已複製到剪貼簿');
+        }).catch(err => {
+            console.error('複製失敗:', err);
+            this.showToastMessage('複製失敗');
+        });
     },
   }));
 }); 
